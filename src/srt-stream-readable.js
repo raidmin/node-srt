@@ -141,7 +141,16 @@ class SRTReadStream extends Readable {
     }
     let remainingBytes = bytes;
     while(true) {
-      const buffer = this.srt.read(this.fd, bytes);
+      let buffer;
+      // read might fail on client disconnect
+      // catch error end emit end event
+      try {
+        buffer = this.srt.read(this.fd, bytes);
+      } catch (e) {
+        debug("Unexpected stream end");
+        this.emit('end');
+        buffer = null;
+      }
       if (buffer === null) { // connection likely died
         debug("Socket read call returned 'null'");
         this.close();
